@@ -1,0 +1,321 @@
+create or replace procedure insert_train(
+no IN train.train_no%type,
+tname IN train.train_name%type,
+src IN train.source_station%type,
+dest IN train.destination_station%type,
+start IN train.journey_start%type,
+end IN train.journey_end%type,
+seats IN train.available_seats%type)
+as
+begin
+insert into train(train_no,train_name,source_station,destination_station,journey_start,journey_end,available_seats)
+values(no,tname,src,dest,start,end,seats);
+commit;
+end;
+/
+
+create or replace procedure insert_station(
+scode IN station.station_code%type,
+sname IN station.station_name%type,
+tname IN station.train_no%type,
+arr IN station.arr_time%type,
+dept IN station.dept_time%type,
+plat IN station.platform%type,
+)
+as
+begin
+insert into station(station_code,station_name,train_no,arr_time,dept_time,platform) 
+values(scode,sname,tname,arr,dept,plat);
+commit;
+end;
+
+create or replace procedure insert_ticket(
+pnr IN ticket.pnr_no%type,
+id IN ticket.ticket_id%type,
+tname IN ticket.train_no%type,
+seat IN ticket.seat.no%type,
+bsta IN ticket.boarding_station%type,
+dsta IN ticket.destination_station%type,
+coach IN ticket.coach_type%type
+)
+as
+begin
+insert into ticket 
+values(pnr,id,tname,seat,bsta,dsta,coach);
+commit;
+end;
+
+
+
+create or replace trigger foreign_key 
+before insert on BOOKING
+
+for each row
+
+declare
+
+uid users.user_id%type;
+
+pno ticket.pnr_no%type;
+
+begin
+
+select pnr_no into pno from ticket where pnr_no=:new.pnr_no;
+
+select user_id into uid from users where user_id=:new.user_id;
+
+null;
+
+exception 
+when no_data_found then
+raise_application_error(-20004,'foreign key violation as value is not found in parent table');
+
+end;
+
+/
+
+
+
+
+
+create or replace trigger display
+
+after insert or delete or update on booking
+
+for each row
+
+begin
+
+if inserting then
+
+dbms_output.put_line('BOOKING SUCCESSFUL');
+
+elsif updating then
+dbms_output.put_line('UPDATION SUCCESSFUL');
+
+elsif deleting then dbms_output.put_line values('SUCCESSFULLY CANCELLED');
+
+end if;
+
+end;
+
+/
+
+create or replace trigger primary_key_1
+
+before insert or update on passenger_ticket
+
+for each row
+
+declare
+
+tid passenger_ticket.ticket_id%type;
+
+begin
+
+if (:new.ticket_id is null) then
+
+raise_application_error(-20002,'primary key can not be null');
+
+end if;
+
+select ticket_id into tid from passenger_ticket where ticket_id=:new.ticket_id;
+
+raise_application_error(-20003,'primary key should be unique');
+
+exception 
+when no_data_found then 
+
+null;
+
+end;
+
+/
+
+
+
+
+create or replace trigger primary_key_2
+
+before insert or update on train
+
+for each row
+
+declare
+
+tno train.train_no%type;
+
+begin
+
+if (:new.train_no is null) then
+
+raise_application_error(-20002,'primary key can not be null');
+
+end if;
+
+select train_no into tno from train where train_no=:new.train_no;
+
+raise_application_error(-20003,'primary key should be unique');
+
+exception 
+when no_data_found then 
+null;
+
+end;
+
+/
+
+
+
+
+
+create or replace trigger primary_key_3
+
+before insert or update on station
+
+for each row
+
+declare
+s_code station.station_code%type;
+
+begin
+
+if (:new.station_code is null) then
+
+raise_application_error(-20002,'primary key can not be null');
+
+end if;
+
+select station_code into s_code from station where station_code=:new.station_code;
+
+raise_application_error(-20003,'primary key should be unique');
+
+exception 
+when no_data_found then 
+null;
+
+end;
+
+/
+
+
+
+
+
+create or replace trigger primary_key
+
+before insert or update on ticket
+
+for each row
+
+declare
+
+p ticket.pnr_no%type;
+
+begin
+
+if (:new.pnr_no is null) then
+
+raise_application_error(-20002,'primary key can not be null');
+
+end if;
+
+select pnr_no into p from ticket where pnr_no=:new.pnr_no;
+
+raise_application_error(-20003,'primary key should be unique');
+
+exception 
+when no_data_found then 
+
+null;
+
+end;
+
+/
+
+
+
+
+
+
+
+create or replace trigger primary_key
+
+before insert or update on users
+
+for each row
+
+declare
+
+uid users.user_id%type;
+
+begin
+
+if (:new.user_id is null) then
+
+raise_application_error(-20002,'primary key can not be null');
+
+end if;
+
+select user_id into uid from users where user_id=:new.user_id;
+
+raise_application_error(-20003,'primary key should be unique');
+
+exception 
+when no_data_found then 
+null;
+
+end;
+
+create or replace trigger foreign_key
+
+before insert on station
+
+for each row
+
+declare 
+
+tno train.train_no%type;
+
+begin
+
+select train_no into tno from train where train_no=:new.train_no;
+
+null;
+
+exception 
+when no_data_found then
+
+raise_application_error(-20004,'foreign key violation as value is not found in parent table');
+
+end;
+
+/
+
+
+
+
+
+create or replace trigger foreign_key
+
+before insert on ticket
+
+for each row
+
+declare 
+pt passenger_ticket.ticekt_id%type;
+
+begin
+
+select ticket_id into pt from passenger_ticket where ticekt_id=:new.ticekt_id;
+
+null;
+
+exception 
+when no_data_found then
+
+raise_application_error(-20004,'foreign key violation as value is not found in parent table');
+
+end;
+
+/
